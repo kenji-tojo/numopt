@@ -1,9 +1,10 @@
-from cProfile import label
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
-def plot(values, residuals, l):
+def plot(values, residuals, l, save_prefix):
+    print(save_prefix)
     iter = np.arange(len(values)) + 1
     plt.clf()
     plt.plot(iter, values, label="values")
@@ -11,19 +12,19 @@ def plot(values, residuals, l):
     plt.xlabel("iteration number $k$")
     plt.ylabel("$f(w_k)$")
     plt.legend()
-    plt.savefig("data/plot_lambda{}.png".format(l))
+    plt.savefig(save_prefix + "_" + str(l) + ".png")
 
-if __name__ == "__main__":
+def read_and_plot(fname):
     values = dict()
     residuals = dict()
 
     niter, l, f = None, None, None
-    with open("data/q1.txt") as f:
-        lines = f.readlines()
+    with open(fname) as file:
+        lines = file.readlines()
         for line in lines:
             if "niter: " in line:
                 if niter is not None:
-                    plot(values[niter], residuals[niter], l)
+                    plot(values[niter], residuals[niter], l, fname.split(".")[0])
                 for ent in line.split(","):
                     if "niter: " in ent:
                         niter = int(ent.split(" ")[1])
@@ -40,4 +41,9 @@ if __name__ == "__main__":
             else:
                 values[niter]   .append(float(line.split(",")[0]))
                 residuals[niter].append(float(line.split(",")[1]))
-        plot(values[niter], residuals[niter], l)
+        plot(values[niter], residuals[niter], l, fname.split(".")[0])
+
+
+if __name__ == "__main__":
+    read_and_plot("data/q1.txt")
+    read_and_plot("data/q2.txt")
