@@ -8,6 +8,8 @@ def plot(values, residuals, l):
     plt.clf()
     plt.plot(iter, values, label="values")
     plt.plot(iter, residuals, label="residuals")
+    plt.xlabel("iteration number $k$")
+    plt.ylabel("$f(w_k)$")
     plt.legend()
     plt.savefig("data/plot_lambda{}.png".format(l))
 
