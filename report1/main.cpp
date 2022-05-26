@@ -89,6 +89,40 @@ void steepest_descent_armijo(
     }
 }
 
+void steepest_descent_nesterov(
+        const Eigen::MatrixXd &A,
+        const Eigen::VectorXd &b,
+        const double lambda,
+        const int niter,
+        std::ofstream &ofs)
+{
+    const auto n = A.cols();
+
+    auto C = 2.0 * (A.transpose() * A + lambda * Eigen::MatrixXd::Identity(n,n));
+    auto d = 2.0 * A.transpose() * b;
+
+    auto alpha = 1.0 / C.operatorNorm();
+    std::cout << "using Nesterov acceleration" << std::endl;
+
+    Eigen::VectorXd w_star = C.colPivHouseholderQr().solve(d);
+    const auto f_star = eval_f(A, b, lambda, w_star);
+    ofs << "niter: "  << niter << ",";
+    ofs << "lambda: " << lambda << ",";
+    ofs << "f_star: " << f_star << std::endl;
+    Eigen::VectorXd w(n); w.setZero();
+    Eigen::VectorXd w_prev = w;
+    Eigen::VectorXd y = w;
+    for (int iter=0;iter<niter;iter++) {
+        auto grad = C * y - d;
+        auto beta = (double)(iter+1) / (double)(iter+4);
+        w_prev = w;
+        w = y - alpha * grad;
+        y = w + beta * (w - w_prev);
+        auto f = eval_f(A, b, lambda, w);
+        ofs << f << "," << std::abs(f_star - f) << std::endl;
+    }
+}
+
 int main() {
 
     constexpr int m = 5;
@@ -118,6 +152,12 @@ int main() {
     ofs.open("data/q2.txt", std::ios::out);
     for (const auto lambda : lambdas) {
         steepest_descent_armijo(A, b, lambda, niter, 1e-3, 0.5, 50, ofs);
+    }
+    ofs.close();
+
+    ofs.open("data/q3.txt", std::ios::out);
+    for (const auto lambda : lambdas) {
+        steepest_descent_nesterov(A, b, lambda, niter, ofs);
     }
     ofs.close();
 
