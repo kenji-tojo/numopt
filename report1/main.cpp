@@ -114,7 +114,8 @@ void steepest_descent_nesterov(
     Eigen::VectorXd y = w;
     for (int iter=0;iter<niter;iter++) {
         auto grad = C * y - d;
-        auto beta = (double)(iter+1) / (double)(iter+4);
+        auto k = iter + 1;
+        auto beta = (double)k / (double)(k+3);
         w_prev = w;
         w = y - alpha * grad;
         y = w + beta * (w - w_prev);

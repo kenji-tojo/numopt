@@ -19,30 +19,30 @@ def read_and_plot(fname, title):
     values = dict()
     residuals = dict()
 
-    niter, l, f = None, None, None
+    ks, ls, fs = list(), list(), list()
     with open(fname) as file:
         lines = file.readlines()
         for line in lines:
-            if "niter: " in line:
-                if niter is not None:
-                    plot(values[niter], residuals[niter], l, fname.split(".")[0], title)
-                for ent in line.split(","):
-                    if "niter: " in ent:
-                        niter = int(ent.split(" ")[1])
-                    elif "lambda: " in ent:
-                        l = float(ent.split(" ")[1])
-                    elif "f_star: " in ent:
-                        f = float(ent.split(" ")[1])
+            if "lambda: " in line:
+                for param_str in line.split(","):
+                    if "niter: " in param_str:
+                        ks.append(int(param_str.split(" ")[1]))
+                    elif "lambda: " in param_str:
+                        ls.append(float(param_str.split(" ")[1]))
+                    elif "f_star: " in param_str:
+                        fs.append(float(param_str.split(" ")[1]))
                 print("loading")
-                print("niter: ", niter)
-                print("lambda: ", l)
-                print("f_star: ", f)
-                values[niter]    = list()
-                residuals[niter] = list()
+                print("niter: ",  ks[-1])
+                print("lambda: ", ls[-1])
+                print("f_star: ", fs[-1])
+                values   [ls[-1]] = list()
+                residuals[ls[-1]] = list()
             else:
-                values[niter]   .append(float(line.split(",")[0]))
-                residuals[niter].append(float(line.split(",")[1]))
-        plot(values[niter], residuals[niter], l, fname.split(".")[0], title)
+                values   [ls[-1]].append(float(line.split(",")[0]))
+                residuals[ls[-1]].append(float(line.split(",")[1]))
+    
+    for l in ls:
+        plot(values[l], residuals[l], l, fname.split(".")[0], title+"$ \lambda = {}$".format(l))
 
 
 if __name__ == "__main__":
