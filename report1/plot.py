@@ -42,7 +42,8 @@ def read_and_plot(fname, title):
                 residuals[ls[-1]].append(float(line.split(",")[1]))
     
     for l in ls:
-        plot(values[l], residuals[l], l, fname.split(".")[0], title+"$ \lambda = {}$".format(l))
+        log_res = np.log(np.clip(np.array(residuals[l]), a_min=np.exp(-30), a_max=None))
+        plot(values[l], log_res, l, fname.split(".")[0], title+"$ \lambda = {}$".format(l))
 
 
 if __name__ == "__main__":

@@ -139,7 +139,7 @@ int main() {
         for (int j=0;j<n;j++) {
             A(i,j) = dis(gen);
         }
-        b(i) = (double)i;
+        b(i) = (double)(i+1);
     }
     const auto lambdas = std::vector<double>{ 0, 1, 10.0 };
 
