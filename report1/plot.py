@@ -15,35 +15,39 @@ def plot(values, residuals, l, save_prefix, title):
     plt.legend()
     plt.savefig(save_prefix + "_" + str(l) + ".png")
 
-def read_and_plot(fname, title):
-    values = dict()
-    residuals = dict()
+def plot_residuals(residuals, lamb, save_prefix, title, log_scale=True):
+    print("save_prefix:", save_prefix)
 
-    ks, ls, fs = list(), list(), list()
+    plt.clf()
+    plt.title(title)
+    if log_scale:
+        residuals = np.log(np.clip(np.array(residuals), a_min=np.exp(-30), a_max=None))
+        plt.ylabel("$\log\left( f(w_k) - f(w^*) \\right)$")
+    else:
+        plt.ylabel("$f(w_k) - f(w^*)$")
+    plt.plot(np.arange(len(residuals))+1, residuals)
+    plt.xlabel("iteration number $k$")
+
+    plt.savefig(save_prefix + "_" + str(int(lamb)) + ".png")
+
+
+def read_and_plot(fname, title):
+    lamb, fmin, vals = None, None, None
     with open(fname) as file:
         lines = file.readlines()
         for line in lines:
             if "lambda: " in line:
-                for param_str in line.split(","):
-                    if "niter: " in param_str:
-                        ks.append(int(param_str.split(" ")[1]))
-                    elif "lambda: " in param_str:
-                        ls.append(float(param_str.split(" ")[1]))
-                    elif "f_star: " in param_str:
-                        fs.append(float(param_str.split(" ")[1]))
-                print("loading")
-                print("niter: ",  ks[-1])
-                print("lambda: ", ls[-1])
-                print("f_star: ", fs[-1])
-                values   [ls[-1]] = list()
-                residuals[ls[-1]] = list()
-            else:
-                values   [ls[-1]].append(float(line.split(",")[0]))
-                residuals[ls[-1]].append(float(line.split(",")[1]))
-    
-    for l in ls:
-        log_res = np.log(np.clip(np.array(residuals[l]), a_min=np.exp(-30), a_max=None))
-        plot(values[l], log_res, l, fname.split(".")[0], title+"$ \lambda = {}$".format(l))
+                lamb = float(line.split(" ")[1])
+            if "f_star: " in line:
+                fmin = float(line.split(" ")[1])
+            if "residuals: " in line:
+                vals = [ float(v) for v in line.split(" ")[1].split(",") ]
+            if "END" in line:
+                assert lamb is not None
+                assert fmin is not None
+                assert vals is not None
+                plot_residuals(vals, lamb, fname.split(".")[0], title+" $\lambda={}$".format(lamb))
+                lamb, fmin, vals = None, None, None
 
 
 if __name__ == "__main__":
