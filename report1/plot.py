@@ -1,52 +1,82 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 
-def plot(values, residuals, l, save_prefix, title):
-    print(save_prefix)
-    iter = np.arange(len(values)) + 1
+def plot_residuals(residuals, lamb, save_prefix, title, log_scale=True):
+    print("save_prefix:", save_prefix)
+
     plt.clf()
     plt.title(title)
-    plt.plot(iter, values, label="values")
-    plt.plot(iter, residuals, label="residuals")
+    if log_scale:
+        residuals = np.log(np.clip(np.array(residuals), a_min=np.exp(-30), a_max=None))
+        plt.ylabel("$\log\left( f(w_k) - f(w^*) \\right)$")
+    else:
+        plt.ylabel("$f(w_k) - f(w^*)$")
+    plt.plot(np.arange(len(residuals))+1, residuals)
     plt.xlabel("iteration number $k$")
-    plt.ylabel("$f(w_k)$")
+
+    plt.savefig(save_prefix + "_" + str(int(lamb)) + ".png")
+
+def plot_q1(result, save_prefix, log_scale=True):
+    print("save_prefix:", save_prefix)
+
+    plt.clf()
+    plt.title("Convergence speed of fixed step-size")
+    for lamb in result:
+        vals = result[lamb]["residuals"]
+        if log_scale:
+            vals = np.log(np.clip(np.array(vals), a_min=np.exp(-30), a_max=None))
+        plt.plot(np.arange(len(vals))+1, vals, label="$\lambda = {}$".format(lamb))
+    plt.xlabel("iteration number $k$")
+    plt.ylabel("$\log\left( f(w_k) - f(w^*) \\right)$" if log_scale else "$f(w_k) - f(w^*)$")
     plt.legend()
-    plt.savefig(save_prefix + "_" + str(l) + ".png")
+    plt.savefig(save_prefix + ".png")
 
-def read_and_plot(fname, title):
-    values = dict()
-    residuals = dict()
 
-    ks, ls, fs = list(), list(), list()
+def plot_comparison(res_fixed, res_advanced, name_advanced, lamb, save_prefix, log_scale=True):
+    print("save_prefix:", save_prefix)
+    print("lambda:", lamb)
+    print("name of method:", name_advanced)
+
+    plt.clf()
+    plt.title("Comparison of fixed and {} steepest descent".format(name_advanced))
+    vals = res_fixed[lamb]["residuals"]
+    if log_scale:
+        vals = np.log(np.clip(np.array(vals), a_min=np.exp(-30), a_max=None))
+    plt.plot(np.arange(len(vals))+1, vals, label="$Fixed, \lambda = {}$".format(lamb))
+    vals = res_advanced[lamb]["residuals"]
+    if log_scale:
+        vals = np.log(np.clip(np.array(vals), a_min=np.exp(-30), a_max=None))
+    plt.plot(np.arange(len(vals))+1, vals, label="${}, \lambda = {}$".format(name_advanced, lamb))
+
+    plt.xlabel("iteration number $k$")
+    plt.ylabel("$\log\left( f(w_k) - f(w^*) \\right)$" if log_scale else "$f(w_k) - f(w^*)$")
+    plt.legend()
+    plt.savefig(save_prefix + ".png")
+
+
+def read_result(fname):
+    result = dict()
+    lamb = None
     with open(fname) as file:
         lines = file.readlines()
         for line in lines:
             if "lambda: " in line:
-                for param_str in line.split(","):
-                    if "niter: " in param_str:
-                        ks.append(int(param_str.split(" ")[1]))
-                    elif "lambda: " in param_str:
-                        ls.append(float(param_str.split(" ")[1]))
-                    elif "f_star: " in param_str:
-                        fs.append(float(param_str.split(" ")[1]))
-                print("loading")
-                print("niter: ",  ks[-1])
-                print("lambda: ", ls[-1])
-                print("f_star: ", fs[-1])
-                values   [ls[-1]] = list()
-                residuals[ls[-1]] = list()
-            else:
-                values   [ls[-1]].append(float(line.split(",")[0]))
-                residuals[ls[-1]].append(float(line.split(",")[1]))
-    
-    for l in ls:
-        log_res = np.log(np.clip(np.array(residuals[l]), a_min=np.exp(-30), a_max=None))
-        plot(values[l], log_res, l, fname.split(".")[0], title+"$ \lambda = {}$".format(l))
+                lamb = float(line.split(" ")[1])
+                result[lamb] = dict()
+            if "f_star: " in line:
+                result[lamb]["f_star"] = float(line.split(" ")[1])
+            if "residuals: " in line:
+                result[lamb]["residuals"] = [ float(v) for v in line.split(" ")[1].split(",") ]
+            if "END" in line:
+                lamb = None
+    return result
 
 
 if __name__ == "__main__":
-    read_and_plot("data/q1.txt", "Normal")
-    read_and_plot("data/q2.txt", "Armijo")
-    read_and_plot("data/q3.txt", "Nesterov")
+    res_fixed    = read_result("data/q1.txt")
+    res_Armijo   = read_result("data/q2.txt")
+    res_Nesterov = read_result("data/q3.txt")
+    plot_q1(res_fixed, "./data/fig_q1")
+    plot_comparison(res_fixed, res_Armijo, "Armijo", lamb=1.0, save_prefix="./data/fig_q2")
+    plot_comparison(res_fixed, res_Nesterov, "Nesterov", lamb=1.0, save_prefix="./data/fig_q3")
