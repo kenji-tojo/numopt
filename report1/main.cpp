@@ -19,7 +19,7 @@ public:
     }
 
     [[nodiscard]]
-    inline double eval(const Eigen::VectorXd &w) const {
+    inline double eval_f(const Eigen::VectorXd &w) const {
         return (m_b - m_A * w).squaredNorm() + m_lambda * w.squaredNorm();
     }
 
@@ -28,7 +28,7 @@ public:
         m_d = 2.0 * m_A.transpose() * m_b;
         m_inv_L = 1.0 / m_C.operatorNorm();
         m_w_star = m_C.colPivHouseholderQr().solve(m_d);
-        m_f_star = eval(m_w_star);
+        m_f_star = eval_f(m_w_star);
     }
 
     inline void set_lambda(double lambda) {
@@ -55,14 +55,14 @@ public:
     {
         auto grad = m_C * w - m_d;
         auto grad2 = grad.squaredNorm();
-        auto f = eval(w);
+        auto f = eval_f(w);
         double f_tmp;
         Eigen::VectorXd w_tmp;
         // backtracking
         auto alpha = prm.alpha_zero;
         for (int l=0;l<prm.iter_max;l++) {
             w_tmp = w - alpha * grad;
-            f_tmp = eval(w_tmp);
+            f_tmp = eval_f(w_tmp);
             if (f_tmp <= f - prm.xi * alpha * grad2) {
                 break;
             }
@@ -117,21 +117,21 @@ int main() {
         }
         b(i) = (double)(i+1);
     }
-    const auto lambdas = std::vector<double>{ 0, 1, 10.0 };
+    const auto lambda_list = std::vector<double>{ 0, 1, 10.0 };
 
     SteepestDescent sd(A, b);
     Eigen::VectorXd w(n), y(n);
 
     std::ofstream ofs;
     ofs.open("data/q1.txt", std::ios::out);
-    for (const auto lambda : lambdas) {
+    for (const auto lambda : lambda_list) {
         sd.set_lambda(lambda);
         WRITE_HEADER(ofs, sd);
         w.setZero();
         std::string delim = "residuals: ";
         for (int i=0;i<niter;i++) {
             sd.step(w);
-            auto f = sd.eval(w);
+            auto f = sd.eval_f(w);
             ofs << delim << f - sd.f_star();
             if (delim != ",") delim = ",";
         }
@@ -143,14 +143,14 @@ int main() {
     {
         SteepestDescent::ArmijoParams prm;
         prm.alpha_zero = 1; prm.tau = 0.5; prm.xi = 1e-3; prm.iter_max = 50;
-        for (const auto lambda : lambdas) {
+        for (const auto lambda : lambda_list) {
             sd.set_lambda(lambda);
             WRITE_HEADER(ofs, sd);
             w.setZero();
             std::string delim = "residuals: ";
             for (int i=0;i<niter;i++) {
                 sd.step_Armijo(w, prm);
-                auto f = sd.eval(w);
+                auto f = sd.eval_f(w);
                 ofs << delim << f - sd.f_star();
                 if (delim != ",") delim = ",";
             }
@@ -160,14 +160,14 @@ int main() {
     ofs.close();
 
     ofs.open("data/q3.txt", std::ios::out);
-    for (const auto lambda : lambdas) {
+    for (const auto lambda : lambda_list) {
         sd.set_lambda(lambda);
         WRITE_HEADER(ofs, sd);
         w.setZero(); y.setZero();
         std::string delim = "residuals: ";
         for (int i=0;i<niter;i++) {
             sd.step_Nesterov(w, y, i+1);
-            auto f = sd.eval(w);
+            auto f = sd.eval_f(w);
             ofs << delim << f - sd.f_star();
             if (delim != ",") delim = ",";
         }
