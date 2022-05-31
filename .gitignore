@@ -2,4 +2,6 @@
 
 **/.idea/
 **/cmake-build-*/
-**/data/
+
+*.png
+**/.DS_Store
